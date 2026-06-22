@@ -1,12 +1,14 @@
 import streamlit as st
+import pandas as pd
+import joblib
+
 st.set_page_config(
     page_title="Traffic Volume Prediction",
     page_icon="🚗",
     layout="centered"
 )
-import pandas as pd
-import joblib
 
+# Load models
 volume_model = joblib.load('traffic_volume_model.pkl')
 level_model = joblib.load('traffic_level_model.pkl')
 columns = joblib.load('traffic_columns.pkl')
@@ -18,43 +20,69 @@ st.markdown(
 )
 
 st.markdown("---")
-temp = st.number_input("Temperature (K)", value=290.0)
 
-rain_1h = st.number_input("Rain in last 1 hour", value=0.0)
+# Form
+with st.form("prediction_form"):
 
-snow_1h = st.number_input("Snow in last 1 hour", value=0.0)
+    temp = st.number_input(
+        "Temperature (K)",
+        value=290.0
+    )
 
-clouds_all = st.slider("Cloud Cover (%)", 0, 100, 50)
+    rain_1h = st.number_input(
+        "Rain in last 1 hour",
+        value=0.0
+    )
 
-time = st.slider("Hour of the Day", 0, 23, 12)
+    snow_1h = st.number_input(
+        "Snow in last 1 hour",
+        value=0.0
+    )
 
-is_weekend = st.selectbox(
-    "Is it a weekend?",
-    ["No", "Yes"]
-)
+    clouds_all = st.slider(
+        "Cloud Cover (%)",
+        0,
+        100,
+        50
+    )
 
-is_holiday = st.selectbox(
-    "Is it a holiday?",
-    ["No", "Yes"]
-)
+    time = st.slider(
+        "Hour of the Day",
+        0,
+        23,
+        12
+    )
 
-weather = st.selectbox(
-    "Weather",
-    [
-        "Clear",
-        "Clouds",
-        "Drizzle",
-        "Fog",
-        "Haze",
-        "Mist",
-        "Rain",
-        "Smoke",
-        "Snow",
-        "Squall",
-        "Thunderstorm"
-    ]
-)
-if st.button("Predict"):
+    is_weekend = st.selectbox(
+        "Is it a weekend?",
+        ["No", "Yes"]
+    )
+
+    is_holiday = st.selectbox(
+        "Is it a holiday?",
+        ["No", "Yes"]
+    )
+
+    weather = st.selectbox(
+        "Weather",
+        [
+            "Clear",
+            "Clouds",
+            "Drizzle",
+            "Fog",
+            "Haze",
+            "Mist",
+            "Rain",
+            "Smoke",
+            "Snow",
+            "Squall",
+            "Thunderstorm"
+        ]
+    )
+
+    predict_button = st.form_submit_button("Predict")
+
+if predict_button:
 
     try:
 
@@ -84,12 +112,12 @@ if st.button("Predict"):
 
         input_df = pd.DataFrame([input_data])
 
-        # Add any missing columns expected by the model
+        # Add missing columns
         for col in columns:
             if col not in input_df.columns:
                 input_df[col] = 0
 
-        # Arrange columns in the same order as training
+        # Arrange columns exactly as during training
         input_df = input_df[columns]
 
         volume_prediction = volume_model.predict(input_df)[0]
@@ -99,13 +127,13 @@ if st.button("Predict"):
         st.subheader("Prediction Results")
 
         st.metric(
-            label="Predicted Traffic Volume",
-            value=f"{int(volume_prediction)} vehicles"
+            "Predicted Traffic Volume",
+            f"{int(volume_prediction)} vehicles"
         )
 
         st.metric(
-            label="Traffic Category",
-            value=level_prediction
+            "Traffic Category",
+            level_prediction
         )
 
         if level_prediction == "Low":
@@ -118,4 +146,4 @@ if st.button("Predict"):
             st.error("🔴 Traffic Condition: High")
 
     except Exception as e:
-        st.error(f"ERROR: {e}")
+        st.exception(e)
