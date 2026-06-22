@@ -56,63 +56,66 @@ weather = st.selectbox(
 )
 if st.button("Predict"):
 
-    input_data = {
-        'temp': temp,
-        'rain_1h': rain_1h,
-        'snow_1h': snow_1h,
-        'clouds_all': clouds_all,
-        'is_weekend': 1 if is_weekend == "Yes" else 0,
-        'time': time,
-        'is_holiday': 1 if is_holiday == "Yes" else 0,
+    try:
 
-        'weather_main_Clouds': 0,
-        'weather_main_Drizzle': 0,
-        'weather_main_Fog': 0,
-        'weather_main_Haze': 0,
-        'weather_main_Mist': 0,
-        'weather_main_Rain': 0,
-        'weather_main_Smoke': 0,
-        'weather_main_Snow': 0,
-        'weather_main_Squall': 0,
-        'weather_main_Thunderstorm': 0
-    }
+        input_data = {
+            'temp': temp,
+            'rain_1h': rain_1h,
+            'snow_1h': snow_1h,
+            'clouds_all': clouds_all,
+            'is_weekend': 1 if is_weekend == "Yes" else 0,
+            'time': time,
+            'is_holiday': 1 if is_holiday == "Yes" else 0,
 
-    if weather != "Clear":
-        input_data[f'weather_main_{weather}'] = 1
+            'weather_main_Clouds': 0,
+            'weather_main_Drizzle': 0,
+            'weather_main_Fog': 0,
+            'weather_main_Haze': 0,
+            'weather_main_Mist': 0,
+            'weather_main_Rain': 0,
+            'weather_main_Smoke': 0,
+            'weather_main_Snow': 0,
+            'weather_main_Squall': 0,
+            'weather_main_Thunderstorm': 0
+        }
 
-    input_df = pd.DataFrame([input_data])
+        if weather != "Clear":
+            input_data[f'weather_main_{weather}'] = 1
 
-    input_df = input_df[columns]
+        input_df = pd.DataFrame([input_data])
 
-    volume_prediction = volume_model.predict(input_df)[0]
+        # Add any missing columns expected by the model
+        for col in columns:
+            if col not in input_df.columns:
+                input_df[col] = 0
 
-    level_prediction = level_model.predict(input_df)[0]
-    st.markdown("---")
+        # Arrange columns in the same order as training
+        input_df = input_df[columns]
 
-    st.subheader("Prediction Results")
+        volume_prediction = volume_model.predict(input_df)[0]
+        level_prediction = level_model.predict(input_df)[0]
 
-    st.metric(
-        label="Predicted Traffic Volume",
-        value=f"{int(volume_prediction)} vehicles"
-    )
+        st.markdown("---")
+        st.subheader("Prediction Results")
 
-    st.metric(
-        label="Traffic Category",
-        value=level_prediction
-    )
+        st.metric(
+            label="Predicted Traffic Volume",
+            value=f"{int(volume_prediction)} vehicles"
+        )
 
-    if level_prediction == "Low":
-        st.success("🟢 Traffic Condition: Low")
+        st.metric(
+            label="Traffic Category",
+            value=level_prediction
+        )
 
-    elif level_prediction == "Normal":
-        st.warning("🟡 Traffic Condition: Normal")
+        if level_prediction == "Low":
+            st.success("🟢 Traffic Condition: Low")
 
-    else:
-        st.error("🔴 Traffic Condition: High")
-    st.success(
-        f"Predicted Traffic Volume: {int(volume_prediction)}"
-    )
+        elif level_prediction == "Normal":
+            st.warning("🟡 Traffic Condition: Normal")
 
-    st.success(
-        f"Traffic Category: {level_prediction}"
-    )
+        else:
+            st.error("🔴 Traffic Condition: High")
+
+    except Exception as e:
+        st.error(f"ERROR: {e}")
